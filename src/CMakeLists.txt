@@ -1,0 +1,20 @@
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+
+set(SRC_LIST initialize.cpp reclab_app.cpp main.cpp)
+add_subdirectory(core)
+add_subdirectory(utilities)
+
+if(MSVC)
+  file(GLOB HEADER_LIST ${MY_INCLUDE_DIR}/*.h)
+  file(GLOB HEADER_LIST ${HEADER_LIST} ${MY_INCLUDE_DIR}/*.hpp)
+  file(GLOB HEADER_LIST ${HEADER_LIST} ${MY_INCLUDE_DIR}/*/*.h)
+  file(GLOB HEADER_LIST ${HEADER_LIST} ${MY_INCLUDE_DIR}/*/*.hpp)
+  add_executable(ReconstructLab ${SRC_LIST} ${HEADER_LIST})
+else()
+  add_executable(ReconstructLab ${SRC_LIST})
+endif()
+
+target_link_libraries(ReconstructLab ${OpenCV_LIBS})
+if(WITH_KINECT)
+  target_link_libraries(ReconstructLab Kinect10)
+endif()

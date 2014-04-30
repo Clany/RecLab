@@ -1,0 +1,5 @@
+// the configured options and settings for Tutorial
+#define ReconstructLab_VERSION_MAJOR @ReconstructLab_VERSION_MAJOR@
+#define ReconstructLab_VERSION_MINOR @ReconstructLab_VERSION_MINOR@
+
+#define ENABLE_KINECT @ENABLE_KINECT@
