@@ -1,4 +1,5 @@
 #include "reclab_app.h"
+#include "clany/timer.hpp"
 
 using namespace std;
 using namespace cv;
@@ -42,6 +43,7 @@ void RecLabApp::startProc()
     Mat frame;
     char c;
     int count = 0;
+    CPUTimer timer;
     do{
         if (grabber->read(frame)) {
             imshow("Frame", frame);
@@ -54,7 +56,7 @@ void RecLabApp::startProc()
         if (c == 'e' || c == 'E') break;
         if (c == 's' || c == 'S') imwrite("kin" + to_string(count++) + ".jpg", frame);
     } while (true);
-
+    timer.elapsed("Time used");
     destroyAllWindows();
 
     if (rec_lab.isSuccess()) {

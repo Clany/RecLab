@@ -1,7 +1,7 @@
 #include <iostream>
+#include <opencv2/viz/vizcore.hpp>
 #include "reclab_app.h"
 #include "clany/timer.hpp"
-#include <opencv2/viz/vizcore.hpp>
 
 using namespace std;
 using namespace cv;

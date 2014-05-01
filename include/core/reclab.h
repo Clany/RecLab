@@ -24,7 +24,8 @@ public:
     bool isSuccess() const { return point_cloud.size() != 0; }
 
 private:
-    using PtCloud = PointCloud<pair<PointXYZ, vector<int>>>;
+    using PtCloud = PointCloud<Point3d>;
+    using ImgPtCorrs = vector<vector<int>>;
 
     // Calibrated case
     bool initModel(const cv::Mat& frame);
@@ -43,14 +44,14 @@ private:
     bool triangulate(const vector<cv::Point2d>& l_pts,
                      const vector<cv::Point2d>& r_pts,
                      cv::Matx34d& P0, cv::Matx34d& P1,
-                     PointCloud<PointXYZ>& point_cloud);
+                     PtCloud& point_cloud) const;
 
     bool testTriangulate(const vector<cv::Point2d>& l_pts,
                          const vector<cv::Point2d>& r_pts,
                          cv::Matx34d& P0, cv::Matx34d& P1,
-                         PointCloud<PointXYZ>& point_cloud);
+                         PtCloud& point_cloud);
 
-    bool isInFrontOfCam(const PointCloud<PointXYZ>& point_cloud, const cv::Matx34d& P) const;
+    bool isInFrontOfCam(const PtCloud& point_cloud, const cv::Matx34d& P) const;
 
     // Uncalibrated case
     bool initModelUC(const cv::Mat& frame);
@@ -82,6 +83,8 @@ private:
     vector<vector<cv::DMatch>> matches_vec;
 
     PtCloud point_cloud;
+    ImgPtCorrs corr_imgpts;
+
     PointCloud<pair<cv::Point3f, int>> prev_3dto2d_corresp;
 };
 

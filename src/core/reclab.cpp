@@ -1,8 +1,8 @@
 #pragma warning(disable: 4244)
 
 #include <numeric>
-#include <opencv2/viz/vizcore.hpp>
 #include "clany/file_operation.hpp"
+#include "clany/timer.hpp"
 
 #include "core/reclab.h"
 #include "core/bundle_adjust.h"
@@ -56,15 +56,10 @@ void RecLab::operator()(const Mat& frame)
 
 void RecLab::writeResult() const
 {
-    Mat result(1, point_cloud.size(), CV_32FC3);
-    float* data = result.ptr<float>(0);
+    ofstream ofs("Result.obj");
     for (const auto& point : point_cloud) {
-        data[0] = point.first.x;
-        data[1] = point.first.y;
-        data[2] = point.first.z;
-        data += 3;
+        ofs << "v " << point << endl;
     }
-    viz::writeCloud("result.obj", result);
 }
 
 
@@ -88,7 +83,7 @@ bool RecLab::initModel(const Mat& frame)
         key_pts_vec.push_back(curr_key_pts);
         cam_mat_vec.push_back(p0);
         cam_mat_vec.push_back(p1);
-        adjustBundle(point_cloud, K, cam_mat_vec, key_pts_vec);
+        adjustBundle(point_cloud, corr_imgpts, K, cam_mat_vec, key_pts_vec);
         processor = bind(&RecLab::addView, this, _1);
         return true;
     }
@@ -104,30 +99,27 @@ bool RecLab::addView(const Mat& frame)
     feature_matcher->match(curr_frame, prev_frame, curr_key_pts, prev_key_pts, matches);
 
     // Get 3D-2D correspondences
-    vector<Point3f> obj_pts;
-    vector<Point2f> img_pts;
+    vector<cv::Point3f> obj_pts;
+    vector<cv::Point2f> img_pts;
     vector<DMatch> non_corresp;
     for (const auto& m : matches) {
-//         l_pts.push_back(prev_key_pts[m.trainIdx].pt);
-//         r_pts.push_back(curr_key_pts[m.queryIdx].pt);
-
-        auto pt_iter = find_if(point_cloud.begin(), point_cloud.end(),
-                               [&m, this](const auto& point) {
-            return point.second.back() == m.trainIdx && point.second.size() == frame_count;
-        });
-        if (pt_iter != point_cloud.end()) {
-            obj_pts.emplace_back(pt_iter->first.x, pt_iter->first.y, pt_iter->first.z);
+        int idx = distance(corr_imgpts.begin(), find_if(corr_imgpts.begin(), corr_imgpts.end(),
+                                                        [&m, this](const auto& img_pt) {
+            return img_pt.back() == m.trainIdx && img_pt.size() == frame_count;
+        }));
+        if (idx != corr_imgpts.size()) {
+            obj_pts.emplace_back(point_cloud[idx].x, point_cloud[idx].y, point_cloud[idx].z);
             img_pts.push_back(curr_key_pts[m.queryIdx].pt);
-            pt_iter->second.push_back(m.queryIdx);
+            corr_imgpts[idx].push_back(m.queryIdx);
         } else {
             l_pts.push_back(prev_key_pts[m.trainIdx].pt);
             r_pts.push_back(curr_key_pts[m.queryIdx].pt);
             non_corresp.push_back(m);
         }
     }
-    for (auto& point : point_cloud) {
-        if (point.second.size() == frame_count) {
-            point.second.push_back(-1);
+    for (auto& img_pt : corr_imgpts) {
+        if (img_pt.size() == frame_count) {
+            img_pt.push_back(-1);
         }
     }
     matches_vec.push_back(move(matches));
@@ -151,18 +143,21 @@ bool RecLab::addView(const Mat& frame)
     Matx34d curr_P = getCameraMat(R, tvec);
     cam_mat_vec.push_back(curr_P);
 
-    PointCloud<PointXYZ> cloud;
+    PtCloud cloud;
     triangulate(l_pts, r_pts, K*prev_P, K*curr_P, cloud);
+    point_cloud += cloud;
 
-    for (size_t i = 0; i < cloud.size(); ++i) {
-        PointXYZ X = cloud[i];
-        vector<int> img_pts(frame_count, -1);
-        img_pts.back() = non_corresp[i].trainIdx;
-        img_pts.push_back(non_corresp[i].queryIdx);
-        point_cloud.push_back({X, img_pts});
+    int view_count = frame_count + 1;
+    vector<int> img_pts_idx(view_count);
+    for (const auto& m : non_corresp) {
+        img_pts_idx.assign(view_count, -1);
+        *(img_pts_idx.rbegin() + 1) = m.trainIdx;
+        img_pts_idx.back() = m.queryIdx;
+
+        corr_imgpts.push_back(img_pts_idx);
     }
     key_pts_vec.push_back(move(curr_key_pts));
-    adjustBundle(point_cloud, K, cam_mat_vec, key_pts_vec);
+    adjustBundle(point_cloud, corr_imgpts, K, cam_mat_vec, key_pts_vec);
 
     return true;
 }
@@ -181,14 +176,14 @@ bool RecLab::findCameraMatrices(const vector<Point2d>& l_pts,
     cv::minMaxIdx(l_pts, nullptr, &max_val);
     Matx33d F = findFundamentalMat(l_pts, r_pts, FM_RANSAC, 0.006 * max_val);
     Matx33d E = K.t() * F * K;
-    Matx33d H1, H2;
-    stereoRectifyUncalibrated(l_pts, r_pts, F, curr_frame.size(), H1, H2);
-    Mat rec_curr, rec_prev;
-    warpPerspective(prev_frame, rec_prev, H1, curr_frame.size());
-    warpPerspective(curr_frame, rec_curr, H2, curr_frame.size());
-    imwrite("rec_03.jpg", rec_prev);
-    imwrite("rec_05.jpg", rec_curr);
-    system("Pause");
+//    Matx33d H1, H2;
+//     stereoRectifyUncalibrated(l_pts, r_pts, F, curr_frame.size(), H1, H2);
+//     Mat rec_curr, rec_prev;
+//     warpPerspective(prev_frame, rec_prev, H1, curr_frame.size());
+//     warpPerspective(curr_frame, rec_curr, H2, curr_frame.size());
+//     imwrite("rec_03.jpg", rec_prev);
+//     imwrite("rec_05.jpg", rec_curr);
+//     system("Pause");
 
     // Determinant of E should be 0
     if (abs(determinant(E)) > 1e-6) return false;
@@ -210,7 +205,7 @@ bool RecLab::findCameraMatrices(const vector<Point2d>& l_pts,
     undistortPoints(r_pts, r_pts_norm, K, noArray());
 
     // Test four cases
-    PointCloud<PointXYZ> pt_cloud;
+    PtCloud pt_cloud;
     P0 = Matx34d::eye();
 
     P1 = getCameraMat(R1, t1);
@@ -275,7 +270,7 @@ void RecLab::getRTFromCamMat(cv::InputArray _P, cv::Vec3d& rvec, cv::Vec3d& tvec
 bool RecLab::triangulate(const vector<Point2d>& l_pts,
                          const vector<Point2d>& r_pts,
                          Matx34d& P0, Matx34d& P1,
-                         PointCloud<PointXYZ>& pt_cloud)
+                         PtCloud& pt_cloud) const
 {
     size_t pc_size = l_pts.size();
     pt_cloud.resize(pc_size);
@@ -311,7 +306,7 @@ bool RecLab::triangulate(const vector<Point2d>& l_pts,
                            img_pt_homo(1) / img_pt_homo(2));
             mse += norm(img_pt - r_pts[i]);
         }
-        pt_cloud[i] = PointXYZ(X(0), X(1), X(2));
+        pt_cloud[i] = clany::Point3d(X(0), X(1), X(2));
     }
     mse /= pc_size * 2;
 #endif
@@ -319,18 +314,14 @@ bool RecLab::triangulate(const vector<Point2d>& l_pts,
 }
 
 
-bool RecLab::testTriangulate(const vector<Point2d>& l_pts,
-                             const vector<Point2d>& r_pts,
-                             Matx34d& P0, Matx34d& P1,
-                             PointCloud<PointXYZ>& pt_cloud)
+bool RecLab::testTriangulate(const vector<Point2d>& l_pts, const vector<Point2d>& r_pts,
+                             Matx34d& P0, Matx34d& P1, PtCloud& pt_cloud)
 {
     if (triangulate(l_pts, r_pts, P0, P1, pt_cloud)) {
         auto& curr_match = matches_vec.back();
-        for (size_t i = 0; i < curr_match.size(); ++i) {
-            PointXYZ X = pt_cloud[i];
-            int l_imgpt_idx = curr_match[i].trainIdx;
-            int r_imgpt_idx = curr_match[i].queryIdx;
-            point_cloud.push_back({X, {l_imgpt_idx, r_imgpt_idx}});
+        point_cloud += pt_cloud;
+        for (const auto& m : curr_match) {
+            corr_imgpts.push_back({m.trainIdx, m.queryIdx});
         }
         return true;
     }
@@ -339,7 +330,7 @@ bool RecLab::testTriangulate(const vector<Point2d>& l_pts,
 }
 
 
-bool RecLab::isInFrontOfCam(const PointCloud<PointXYZ>& point_cloud, const Matx34d& P)  const
+bool RecLab::isInFrontOfCam(const PtCloud& point_cloud, const Matx34d& P)  const
 {
 //     Matx33d M = Mat(P)(Rect(0, 0, 3, 3));
 //     double w = (P.row(2) * Matx41d(pt.x, pt.y, pt.z, 1))(0);

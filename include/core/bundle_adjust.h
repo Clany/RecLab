@@ -7,9 +7,10 @@
 
 _CLANY_BEGIN
 
-using PtCloud = PointCloud<pair<PointXYZ, vector<int>>>;
+using PtCloud = PointCloud<Point3d>;
+using ImgPtCorrs = vector<vector<int>>;
 
-void adjustBundle(PtCloud& cloud, cv::Matx33d& K, vector<cv::Matx34d>& P_vec,
+void adjustBundle(PtCloud& cloud, ImgPtCorrs& img_pts, cv::Matx33d& K, vector<cv::Matx34d>& P_vec,
                   const vector<vector<cv::KeyPoint>>& key_pts_vec);
 
 
