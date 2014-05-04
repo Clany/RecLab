@@ -20,7 +20,7 @@ public:
 private:
     cv::Ptr<cv::FeatureDetector> detector;
     cv::Ptr<cv::DescriptorExtractor> extractor;
-    unique_ptr<cv::BFMatcher> matcher;
+    shared_ptr<cv::BFMatcher> matcher;
 };
 _CLANY_END
 

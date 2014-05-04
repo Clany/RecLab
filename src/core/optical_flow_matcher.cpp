@@ -1,4 +1,5 @@
 #include <set>
+#include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -10,7 +11,8 @@ using namespace clany;
 
 
 OFMatcher::OFMatcher(const string& detector_type)
-: detector(FeatureDetector::create(detector_type))
+    : detector(FeatureDetector::create(detector_type)),
+      matcher(NORM_L2, true)
 {}
 
 
@@ -47,8 +49,11 @@ void OFMatcher::match(const Mat& img_a, const Mat& img_b,
 
     vector<int> good_pts_idx;
     vector<Point2f> good_pts;
+    float dist_thresh = img_a.cols / 10.f;
     for (uint i = 0; i < status.size(); ++i) {
-        if (status[i] && error[i] < 12.0) {
+        Point2f delta = pts_a[i] - pts_b[i];
+        float dist = sqrt(delta.dot(delta));
+        if (status[i] && error[i] < 12/* && dist < dist_thresh*/) {
             good_pts_idx.push_back(i);
             good_pts.push_back(pts_b[i]);
         } else {
@@ -68,12 +73,9 @@ void OFMatcher::match(const Mat& img_a, const Mat& img_b,
         DMatch match;
         if (curr_m.size() == 1) {
             match = curr_m[0];
-        } else if (curr_m.size() > 1) {
-            if (curr_m[0].distance / curr_m[1].distance < 0.7) {
+        } else if (curr_m.size() > 1 &&
+                   curr_m[0].distance / curr_m[1].distance < 0.7) {
                 match = curr_m[0];
-            } else {
-                continue;
-            }
         } else {
             continue;
         }
@@ -85,10 +87,8 @@ void OFMatcher::match(const Mat& img_a, const Mat& img_b,
         }
     }
 
-// #ifndef NDEBUG
-//     Mat img_matches;
-//     drawMatches(img_a, ft_pts_a, img_b, ft_pts_b, matches, img_matches);
-//     imshow("result", img_matches);
-//     waitKey();
-// #endif
+#ifndef NDEBUG
+    Mat img_matches;
+    drawMatches(img_a, ft_pts_a, img_b, ft_pts_b, matches, img_matches);
+#endif
 }

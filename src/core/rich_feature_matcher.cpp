@@ -9,12 +9,14 @@ using namespace clany;
 
 
 RichFTMatcher::RichFTMatcher(const string& detector_type, const string& extractor_type)
-    : detector(FeatureDetector::create(detector_type)), extractor(DescriptorExtractor::create(extractor_type))
+    : detector(FeatureDetector::create(detector_type)),
+      /*detector(new GridAdaptedFeatureDetector(FeatureDetector::create(detector_type), 10000)),*/
+      extractor(DescriptorExtractor::create(extractor_type))
 {
     if (extractor_type == "ORB" || extractor_type == "BRISK" || extractor_type == "BRIEF") {
-        matcher = make_unique<BFMatcher>(NORM_HAMMING, true);
+        matcher = make_shared<BFMatcher>(NORM_HAMMING, true);
     } else {
-        matcher = make_unique<BFMatcher>(NORM_L2, true);
+        matcher = make_shared<BFMatcher>(NORM_L2, true);
     }
 }
 
@@ -44,8 +46,6 @@ void RichFTMatcher::match(const Mat& img_a, const Mat& img_b,
     vector<Point2f> pts_a_good, pts_b_good;
     set<int> matched_pt;
     for (auto& m : matches) {
-        if (m.trainIdx < 0) m.trainIdx = m.imgIdx;
-
         if (matched_pt.find(m.trainIdx) == matched_pt.end()) {
             pts_a_good.push_back(ft_pts_a[m.queryIdx].pt);
             pts_b_good.push_back(ft_pts_b[m.trainIdx].pt);
@@ -56,7 +56,7 @@ void RichFTMatcher::match(const Mat& img_a, const Mat& img_b,
     double max_val;
     cv::minMaxIdx(pts_a_good, nullptr, &max_val);
     vector<uchar> status(pts_a_good.size());
-    Matx33d F = findFundamentalMat(pts_a_good, pts_b_good, FM_RANSAC, 0.006 * max_val, 0.99, status);
+    Matx33d F = findFundamentalMat(pts_a_good, pts_b_good, CV_FM_RANSAC, 0.006 * max_val, 0.99, status);
 
     vector<DMatch> good_matches(countNonZero(status));
     auto status_iter = status.begin();

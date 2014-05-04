@@ -9,15 +9,17 @@ class RecLabApp
 {
 public:
     // Camera
-    explicit RecLabApp(int cam_idx = 0, cv::InputArray calib_mat = cv::noArray());
+    explicit RecLabApp(int cam_idx = 0);
 
     // Video
-    explicit RecLabApp(const string& file_name, cv::InputArray calib_mat = cv::noArray());
+    explicit RecLabApp(const string& file_name);
 
     // Image sequence
-    explicit RecLabApp(const vector<cv::Mat>& img_seq, cv::InputArray calib_mat = cv::noArray());
+    explicit RecLabApp(const vector<cv::Mat>& img_seq);
 
     void startProc();
+
+    void parseParameters(int argc, char* argv[]);
 
 private:
     shared_ptr<Grabber> grabber;
