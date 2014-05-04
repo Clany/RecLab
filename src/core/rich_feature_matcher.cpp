@@ -25,8 +25,9 @@ void RichFTMatcher::detect(const Mat& img, vector<KeyPoint>& ft_pts)
 {
     if (!ft_pts.empty()) ft_pts.clear();
 
+    Mat descriptors;
     detector->detect(img, ft_pts);
-    extractor->compute(img, ft_pts, Mat());
+    extractor->compute(img, ft_pts, descriptors);
 }
 
 

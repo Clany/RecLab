@@ -4,9 +4,9 @@
 #pragma warning(disable: 4244)
 #pragma warning(disable: 4018)
 
-#include <ssba/Math/v3d_linear.h>
-#include <ssba/Base/v3d_vrmlio.h>
-#include <ssba/Geometry/v3d_metricbundle.h>
+#include "Math/v3d_linear.h"
+#include "Base/v3d_vrmlio.h"
+#include "Geometry/v3d_metricbundle.h"
 
 #include "core/bundle_adjust.h"
 
@@ -73,9 +73,10 @@ void clany::adjustBundle(PtCloud& cloud, ImgPtCorrs& img_pts, Matx33d& _K, vecto
     Matrix3x3d K_new = cams[0].getIntrinsic();
     bool good_adj = false;
     {
+        StdDistortionFunction distort_func;
         ScopedBundleExtrinsicNormalizer ext_norm(cams, Xs);
         ScopedBundleIntrinsicNormalizer int_norm(cams, measurements, correspondingView);
-        CommonInternalsMetricBundleOptimizer opt(FULL_BUNDLE_FOCAL_LENGTH_PP, thresh, K_new, StdDistortionFunction(), cams, Xs,
+        CommonInternalsMetricBundleOptimizer opt(FULL_BUNDLE_FOCAL_LENGTH_PP, thresh, K_new, distort_func, cams, Xs,
                                                  measurements, correspondingView, correspondingPoint);
         opt.tau = 1e-3;
         opt.maxIterations = 50;

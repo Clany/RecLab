@@ -1,3 +1,0 @@
-if(WITH_KINECT)
-  set(SRC_LIST ${SRC_LIST} ${CMAKE_CURRENT_SOURCE_DIR}/kinect_grabber.cpp PARENT_SCOPE)
-endif()

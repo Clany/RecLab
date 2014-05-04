@@ -8,7 +8,6 @@
 #include "clany/point_types.h"
 
 #include "feature_matcher.h"
-#include "core/auto_calib.h"
 
 
 _CLANY_BEGIN
@@ -60,7 +59,7 @@ private:
 
     bool triangulate(const vector<cv::Point2d>& l_pts,
                      const vector<cv::Point2d>& r_pts,
-                     cv::Matx34d& P0, cv::Matx34d& P1,
+                     const cv::Matx34d& P0, const cv::Matx34d& P1,
                      PtCloud& point_cloud) const;
 
     cv::Matx41d triangulationImpl(const cv::Point2d& l_pt, const cv::Point2d& r_pt,

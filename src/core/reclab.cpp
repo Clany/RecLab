@@ -387,7 +387,7 @@ void RecLab::getOrientation(InputArray _P, Vec3d& rvec, Vec3d& tvec) const
 
 bool RecLab::triangulate(const vector<Point2d>& l_pts,
                          const vector<Point2d>& r_pts,
-                         Matx34d& P0, Matx34d& P1,
+                         const Matx34d& P0, const Matx34d& P1,
                          PtCloud& pt_cloud) const
 {
     size_t pt_size = l_pts.size();
