@@ -1,11 +1,11 @@
 #ifndef CLANY_POINT_TYPES_HPP
 #define CLANY_POINT_TYPES_HPP
 
-#include <clany/clany_macros.h>
 #include <vector>
 #include <iterator>
 #include <iostream>
 #include <memory>
+#include "clany/clany_macros.h"
 
 _CLANY_BEGIN
 #define  CLANY_ADD_RGB \
